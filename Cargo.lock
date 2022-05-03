@@ -225,8 +225,8 @@ dependencies = [
  "gcp_auth",
  "reqwest",
  "serde",
- "serde_json",
  "tokio",
+ "toml",
  "urlencoding",
 ]
 
