@@ -1,0 +1,33 @@
+<html>
+    <head>
+        <script>
+            window.onload = () => {
+                console.log('loaded')
+                let host = '{{ ws_host }}'
+                let port = {{ ws_port }}
+                const socket = new WebSocket(`ws://${host}:${port}/ws`)
+
+                const div = document.getElementById('all_events');
+
+                socket.addEventListener('open', (event) => {
+                    socket.send('Hello')
+                    console.log('opened')
+                });
+
+                socket.addEventListener('message', (event) => {
+                    console.log('MESSAGE!')
+                    let json = JSON.parse(event.data)
+                    console.log(json)
+                    div.textContent = json
+                });
+            };
+        </script>
+    </head>
+    <body>
+        <div id="container">
+            <div id="all_events">
+
+            </div>
+        </div>
+    </body>
+</html>
