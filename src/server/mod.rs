@@ -4,16 +4,18 @@ use axum::{
         Extension
     },
     response::{Html, IntoResponse},
-    routing::get,
+    routing::{get, get_service},
     Router
 };
 use lazy_static::lazy_static;
 use std::{
+    io,
     net::SocketAddr,
     sync::Arc
 };
 use tera::{Context, Tera};
 use tokio::sync::broadcast;
+use tower_http::services::ServeDir;
 
 use crate::settings;
 
@@ -43,8 +45,9 @@ pub async fn start_server(settings: settings::Server, mut tx: broadcast::Sender<
     });
 
     let app = Router::new()
-        .route("/", get(handler))
+        .route("/", get(main_handler))
         .route("/ws", get(ws_handler))
+        .fallback(get_service(ServeDir::new("./static")).handle_error(handle_error))
         .layer(Extension(app_state));
 
     axum::Server::bind(&addr)
@@ -53,7 +56,7 @@ pub async fn start_server(settings: settings::Server, mut tx: broadcast::Sender<
         .expect("Could not start the server!");
 }
 
-async fn handler(
+async fn main_handler(
     Extension(state): Extension<Arc<AppState>>
 ) -> impl IntoResponse {
     let mut context = Context::new();
@@ -83,4 +86,8 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>) {
                 .is_err() { return; }
         }
     }
+}
+
+async fn handle_error(error: io::Error) -> impl IntoResponse {
+    Html(error.to_string())
 }

@@ -1,32 +1,82 @@
+<!DOCTYPE html>
 <html>
     <head>
+        <link rel="stylesheet" href="main.css" />
         <script>
             window.onload = () => {
-                console.log('loaded')
-                let host = '{{ ws_host }}'
-                let port = {{ ws_port }}
-                const socket = new WebSocket(`ws://${host}:${port}/ws`)
+                connect()
+            }
 
-                const div = document.getElementById('all_events');
+            let connect = () => {
+                const host = '{{ ws_host }}'
+                const port = {{ ws_port }}
+                const socket = new WebSocket(`ws://${host}:${port}/ws`)
+                
+                const all_events_div = document.getElementById('all_events');
+                const next_event_div = document.getElementById('next_event');
+                const status_div = document.getElementById('status');
+
+                status_div.textContent = 'Starting App'
 
                 socket.addEventListener('open', (event) => {
                     socket.send('Hello')
-                    console.log('opened')
+                    status_div.textContent = 'Connection established'
+                });
+
+                socket.addEventListener('error', (event) => {
+                    // status_div.textContent = `Connection error - ${event.message}`
+                    socket.close()
+                });
+
+                socket.addEventListener('close', () => {
+                    status_div.textContent = 'Disconnected, reconnecting...'
+                    setTimeout(() => {
+                        connect()
+                    }, 5000)
                 });
 
                 socket.addEventListener('message', (event) => {
-                    console.log('MESSAGE!')
                     let json = JSON.parse(event.data)
                     console.log(json)
-                    div.textContent = json
+                    renderEvents(json, all_events_div)
+                    status_div.textContent = `Message received at ${new Date()}`
                 });
-            };
+            }
+
+            let renderEvents = (data, container) => {
+                let output = ''
+                for (event of data) {
+                    output += renderSingleEvent(event)
+                }
+                container.innerHTML = output
+            }
+
+            let renderSingleEvent = (data) => {
+                const start = new Date(data.start.dateTime)
+                const end = new Date(data.end.dateTime)
+                const top = timeToPx(start);
+                const height = timeToPx(end) - top;
+                return `<div class="grid_event" style="top:${top}px; height:${height}px">
+                    <strong>
+                        ${start.toLocaleString('pl-PL')} - ${end.toLocaleString('pl-PL')}
+                    </strong>
+                     ${data.summary}
+                     <a href="${data.hangoutLink}">MEET</a>
+                </div>`
+            }
+
+            let timeToPx = (dateTime) => {
+                console.log(dateTime)
+                return (dateTime - new Date().setHours(0,0,0,0)) / (30 * 1000)  
+            }
         </script>
     </head>
     <body>
         <div id="container">
-            <div id="all_events">
-
+            <div id="status"></div>
+            <div id="events">
+                <div id="next_event">Waiting for data...</div>
+                <div id="all_events">Waiting for data...</div>
             </div>
         </div>
     </body>

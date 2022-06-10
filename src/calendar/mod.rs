@@ -40,7 +40,6 @@ async fn fetch_data(settings: &settings::Calendar, token: &str) -> Option<Vec<Ev
     let start = urlencoding::encode(&start).into_owned(); 
     let end = urlencoding::encode(&end).into_owned(); 
     let url = format!("{}/{}/events?timeMin={}&timeMax={}&singleEvents=true", BASE_URL, settings.calendar_id, start, end);
-
     let client = reqwest::Client::new();
 
     let response = match client
