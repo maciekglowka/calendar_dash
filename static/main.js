@@ -4,6 +4,8 @@ window.onload = () => {
     connect()
 }
 
+let calendar_events = []
+
 let connect = () => {
     const socket = new WebSocket(`ws://${window.ws_host}:${window.ws_port}/ws`)
     
@@ -11,7 +13,6 @@ let connect = () => {
     const next_event_div = document.getElementById('next_event').firstElementChild
     
     const status_div = document.getElementById('status');
-    let calendar_events = []
 
     status_div.textContent = 'Starting App'
 
@@ -29,7 +30,7 @@ let connect = () => {
         status_div.textContent = 'Disconnected, reconnecting...'
         setTimeout(() => {
             connect()
-        }, 10000)
+        }, 5000)
     });
 
     socket.addEventListener('message', (event) => {
@@ -41,5 +42,5 @@ let connect = () => {
 
     let time_interval = setInterval(() => {
         renderNextEvent(calendar_events, next_event_div)
-    }, 5000)
+    }, 10000)
 }
