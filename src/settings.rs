@@ -13,7 +13,8 @@ pub struct Calendar {
     pub calendar_id: String,
     pub refresh_secs: u64,
     pub days_ahead: i64,
-    pub key_path: String
+    pub key_path: String,
+    pub debug: bool
 }
 
 #[derive(Clone, Deserialize)]

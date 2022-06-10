@@ -9,6 +9,8 @@ use urlencoding;
 
 use crate::settings;
 
+mod mock_data;
+
 const BASE_URL: &str = "https://www.googleapis.com/calendar/v3/calendars";
 const CALENDAR_SCOPE: &str = "https://www.googleapis.com/auth/calendar.readonly";
 
@@ -20,6 +22,7 @@ pub struct EventTime {
 
 #[derive(Deserialize, Debug, Serialize)]
 pub struct EventItem {
+    pub id: Option<String>,
     pub start: Option<EventTime>,
     pub end: Option<EventTime>,
     pub description: Option<String>,
@@ -33,6 +36,10 @@ struct EventResponse {
 }
 
 async fn fetch_data(settings: &settings::Calendar, token: &str) -> Option<Vec<EventItem>> {
+    if settings.debug {
+        return Some(mock_data::get_mock_data());
+    }
+    
     let today = chrono::offset::Local::today().and_hms(0, 0, 0);
     let start = today.to_rfc3339();
     let end = (today + chrono::Duration::days(settings.days_ahead)).to_rfc3339();
