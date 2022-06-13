@@ -94,7 +94,7 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>) {
     }
 }
 
-async fn send_cache(socket: & mut WebSocket) {
+async fn send_cache(socket: &mut WebSocket) {
     let cache = CACHE.lock().await;
     socket.send(Message::Text(cache.to_owned())).await;
 }
