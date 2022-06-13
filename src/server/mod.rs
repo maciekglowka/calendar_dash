@@ -14,7 +14,7 @@ use std::{
     sync::Arc
 };
 use tera::{Context, Tera};
-use tokio::sync::broadcast;
+use tokio::sync::{broadcast, Mutex};
 use tower_http::services::ServeDir;
 
 use crate::settings;
@@ -26,6 +26,7 @@ lazy_static! {
             Err(_) => panic!("Could not load templates!")
         }
     };
+    static ref CACHE: Mutex<String> = Mutex::new(String::new());
 }
 
 struct AppState {
@@ -39,10 +40,14 @@ pub async fn start_server(settings: settings::Server, mut tx: broadcast::Sender<
         .parse().expect("Incorrect hostname");
 
     let app_state = Arc::new(AppState {
-        tx: tx,
+        tx: tx.clone(),
         ws_host: settings.host,
         ws_port: settings.port
     });
+
+    tokio::spawn(async move {
+        cache_handler(tx.clone()).await;
+    }); 
 
     let app = Router::new()
         .route("/", get(main_handler))
@@ -76,6 +81,7 @@ async fn ws_handler(
 }
 
 async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>) {
+    send_cache(&mut socket).await;
     let mut rx = state.tx.subscribe();
     loop {
         let data = rx.recv().await;
@@ -88,6 +94,22 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>) {
     }
 }
 
+async fn send_cache(socket: & mut WebSocket) {
+    let cache = CACHE.lock().await;
+    socket.send(Message::Text(cache.to_owned())).await;
+}
+
 async fn handle_error(error: io::Error) -> impl IntoResponse {
     Html(error.to_string())
+}
+
+async fn cache_handler(tx: broadcast::Sender<String>) {
+    let mut rx = tx.subscribe();
+    loop {
+        let data = rx.recv().await;
+        if let Ok(json) = data {
+            let mut cache = CACHE.lock().await;
+            *cache = json;
+        }
+    }
 }
